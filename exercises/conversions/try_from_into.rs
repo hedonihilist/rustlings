@@ -4,6 +4,7 @@
 // You can read more about it at https://doc.rust-lang.org/std/convert/trait.TryFrom.html
 use std::convert::{TryFrom, TryInto};
 use std::error;
+use std::fmt;
 
 #[derive(Debug, PartialEq)]
 struct Color {
@@ -11,8 +12,6 @@ struct Color {
     green: u8,
     blue: u8,
 }
-
-// I AM NOT DONE
 
 // Your task is to complete this implementation
 // and return an Ok result of inner type Color.
@@ -23,22 +22,74 @@ struct Color {
 // but the slice implementation needs to check the slice length!
 // Also note that correct RGB color values must be integers in the 0..=255 range.
 
+#[derive(Debug)]
+enum ConversionError {
+    ValueError,
+    LengthError,
+}
+
+impl std::error::Error for ConversionError {}
+
+impl fmt::Display for ConversionError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let description = match *self {
+            ConversionError::ValueError => "value not in [0,255]",
+            ConversionError::LengthError => "rgb format expects 3 values",
+        };
+        f.write_str(description)
+    }
+}
+
+fn valid_color(code: i16) -> bool {
+    code <= 255 && code >= 0
+}
+
 // Tuple implementation
 impl TryFrom<(i16, i16, i16)> for Color {
     type Error = Box<dyn error::Error>;
-    fn try_from(tuple: (i16, i16, i16)) -> Result<Self, Self::Error> {}
+    fn try_from(tuple: (i16, i16, i16)) -> Result<Self, Self::Error> {
+        match (valid_color(tuple.0), valid_color(tuple.1), valid_color(tuple.2)) {
+            (true, true, true) => Ok(Color {
+                red: tuple.0 as u8,
+                green: tuple.1 as u8,
+                blue: tuple.2 as u8,
+            }),
+            (_,_,_) => Err(Box::new(ConversionError::ValueError)),
+        }
+    }
 }
 
 // Array implementation
 impl TryFrom<[i16; 3]> for Color {
     type Error = Box<dyn error::Error>;
-    fn try_from(arr: [i16; 3]) -> Result<Self, Self::Error> {}
+    fn try_from(arr: [i16; 3]) -> Result<Self, Self::Error> {
+        match (valid_color(arr[0]), valid_color(arr[1]), valid_color(arr[2])) {
+            (true, true, true) => Ok(Color {
+                red: arr[0] as u8,
+                green: arr[1] as u8,
+                blue: arr[2] as u8,
+            }),
+            (_,_,_) => Err(Box::new(ConversionError::ValueError)),
+        }
+    }
 }
 
 // Slice implementation
 impl TryFrom<&[i16]> for Color {
     type Error = Box<dyn error::Error>;
-    fn try_from(slice: &[i16]) -> Result<Self, Self::Error> {}
+    fn try_from(slice: &[i16]) -> Result<Self, Self::Error> {
+        if slice.len() != 3 {
+            return Err(Box::new(ConversionError::LengthError));
+        }
+        match (valid_color(slice[0]), valid_color(slice[1]), valid_color(slice[2])) {
+            (true, true, true) => Ok(Color {
+                red: slice[0] as u8,
+                green: slice[1] as u8,
+                blue: slice[2] as u8,
+            }),
+            (_,_,_) => Err(Box::new(ConversionError::ValueError)),
+        }
+    }
 }
 
 fn main() {

@@ -4,14 +4,13 @@
 // You can read more about it at https://doc.rust-lang.org/std/str/trait.FromStr.html
 use std::error;
 use std::str::FromStr;
+use std::fmt;
 
 #[derive(Debug)]
 struct Person {
     name: String,
     age: usize,
 }
-
-// I AM NOT DONE
 
 // Steps:
 // 1. If the length of the provided string is 0, an error should be returned
@@ -23,9 +22,32 @@ struct Person {
 // 6. If while extracting the name and the age something goes wrong, an error should be returned
 // If everything goes well, then return a Result of a Person object
 
+#[derive(Debug)]
+struct FromStrError;
+
+impl std::fmt::Display for FromStrError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> fmt::Result {
+        f.write_str("cannot convert")
+    }
+}
+
+impl std::error::Error for FromStrError {}
+
 impl FromStr for Person {
     type Err = Box<dyn error::Error>;
     fn from_str(s: &str) -> Result<Person, Self::Err> {
+        let splited: Vec<&str> = s.split(',').collect();
+        if splited.len() != 2 {
+            return Err(FromStrError.into());
+        }
+        if splited[0].is_empty() {
+            return Err(FromStrError.into());
+        }
+        let age = splited[1].parse::<usize>()?;
+        Ok(Person {
+            name: splited[0].to_owned(),
+            age: age,
+        })
     }
 }
 
